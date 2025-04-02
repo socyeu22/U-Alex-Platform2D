@@ -72,3 +72,7 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+/U Alex Platform2D/Library/
+/U Alex Platform2D/Logs/
+/U Alex Platform2D/Temp/
+/U Alex Platform2D/.vsCode/
