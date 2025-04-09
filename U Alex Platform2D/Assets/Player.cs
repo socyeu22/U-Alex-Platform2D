@@ -10,10 +10,14 @@ public class Player : MonoBehaviour
     private bool _canDoubleJump = true;
 
     [Header("Collision Info")]
-    [SerializeField] private float _raycastLenght = 0.5f;
-    [SerializeField] private LayerMask _layerMask;
+    [SerializeField] private float _groundCheckDistance = 0.5f;
+    [SerializeField] private float _wallCheckDistance = 0.05f;
+    [SerializeField] private LayerMask _groundLayerMasks;
+    [SerializeField] private LayerMask _wallLayerMasks;
+    
     private bool _isGrounded;
     private bool _isAirborne;
+    private bool _isWallDetected;
 
     private bool facingRight = true;
     private int facingDir = 1;
@@ -34,6 +38,7 @@ public class Player : MonoBehaviour
         HandleCollision();
         HandleInput();
         HandleMovement();
+        HandleWallSlide();
         HandleAnimations();
         HandleFlip();
     }
@@ -51,7 +56,13 @@ public class Player : MonoBehaviour
     {
         _isAirborne = true;
     }
-
+    private void HandleWallSlide()
+    {
+        if(_isWallDetected && _rb.velocity.y < 0)
+        {
+            _rb.velocity = new Vector2(_rb.velocity.x, _rb.velocity.y * 0.5f);
+        }
+    }
     private void HandleLanding()
     {
         _isAirborne = false;
@@ -90,7 +101,8 @@ public class Player : MonoBehaviour
 
     private void HandleCollision()
     {
-        _isGrounded = Physics2D.Raycast(transform.position, Vector2.down, _raycastLenght, _layerMask);
+        _isGrounded = Physics2D.Raycast(transform.position, Vector2.down, _groundCheckDistance, _groundLayerMasks);
+        _isWallDetected = Physics2D.Raycast(transform.position, Vector2.right * facingDir, _groundCheckDistance, _wallLayerMasks);
     }
 
     private void HandleAnimations()
@@ -109,7 +121,9 @@ public class Player : MonoBehaviour
     void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * _raycastLenght);
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * _groundCheckDistance);
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.right * facingDir *_wallCheckDistance);
+
     }
     private void HandleFlip()
     {
