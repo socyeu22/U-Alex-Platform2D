@@ -22,6 +22,7 @@ public class Player : MonoBehaviour
     private bool facingRight = true;
     private int facingDir = 1;
     private float _xInput;
+    private float _yInput;
     
     private Rigidbody2D _rb;
     private Animator _animator;
@@ -35,12 +36,13 @@ public class Player : MonoBehaviour
     private void Update()
     {
         UpdateAirbornStatus();
-        HandleCollision();
+
         HandleInput();
-        HandleMovement();
         HandleWallSlide();
-        HandleAnimations();
+        HandleMovement();
         HandleFlip();
+        HandleCollision();
+        HandleAnimations();
     }
 
     private void UpdateAirbornStatus()
@@ -58,10 +60,13 @@ public class Player : MonoBehaviour
     }
     private void HandleWallSlide()
     {
-        if(_isWallDetected && _rb.velocity.y < 0)
-        {
-            _rb.velocity = new Vector2(_rb.velocity.x, _rb.velocity.y * 0.5f);
-        }
+        bool isCanWallSlide = _isWallDetected && _rb.velocity.y < 0;
+        float yVelocityModifier = (_yInput < 0)? 1 : 0.5f;
+
+        if(!isCanWallSlide)
+            return;
+
+        _rb.velocity = new Vector2(_rb.velocity.x, _rb.velocity.y * yVelocityModifier);
     }
     private void HandleLanding()
     {
@@ -72,6 +77,7 @@ public class Player : MonoBehaviour
     private void HandleInput()
     {
         _xInput = Input.GetAxisRaw("Horizontal");
+        _yInput = Input.GetAxisRaw("Vertical");
         if (Input.GetKeyDown(KeyCode.Space))
         {
             JumpButton();
@@ -102,7 +108,7 @@ public class Player : MonoBehaviour
     private void HandleCollision()
     {
         _isGrounded = Physics2D.Raycast(transform.position, Vector2.down, _groundCheckDistance, _groundLayerMasks);
-        _isWallDetected = Physics2D.Raycast(transform.position, Vector2.right * facingDir, _groundCheckDistance, _wallLayerMasks);
+        _isWallDetected = Physics2D.Raycast(transform.position, Vector2.right * facingDir, _wallCheckDistance, _wallLayerMasks);
     }
 
     private void HandleAnimations()
@@ -110,10 +116,13 @@ public class Player : MonoBehaviour
         _animator.SetFloat("xVelocity", _rb.velocity.x);
         _animator.SetFloat("yVelocity", _rb.velocity.y);
         _animator.SetBool("isGrounded", _isGrounded);
+        _animator.SetBool("isWallDetected", _isWallDetected);
     }
 
     private void HandleMovement()
     {
+        if(_isWallDetected)
+            return;
         _rb.velocity = new Vector2(_xInput * _moveSpeed, _rb.velocity.y);
     }
 
@@ -127,7 +136,7 @@ public class Player : MonoBehaviour
     }
     private void HandleFlip()
     {
-        if(_rb.velocity.x < 0 && facingRight || _rb.velocity.x > 0 && facingRight == false)
+        if(_xInput < 0 && facingRight || _xInput > 0 && facingRight == false)
             Flip(); 
     }
     private void Flip()
