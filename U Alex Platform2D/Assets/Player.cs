@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -6,14 +7,18 @@ public class Player : MonoBehaviour
     [SerializeField] private float _moveSpeed;
     [SerializeField] private float _firtJumpForce = 5f;
     [SerializeField] private float _secondJumpForce = 3f;
-    
     private bool _canDoubleJump = true;
+
+    [Header("Wall Interactions")]
+
+    [SerializeField] private float _wallJumpDuration = 0.6f;
+    [SerializeField] private Vector2 _wallJumpForce;
+    private bool _isWallJumping;
 
     [Header("Collision Info")]
     [SerializeField] private float _groundCheckDistance = 0.5f;
     [SerializeField] private float _wallCheckDistance = 0.05f;
     [SerializeField] private LayerMask _groundLayerMasks;
-    [SerializeField] private LayerMask _wallLayerMasks;
     
     private bool _isGrounded;
     private bool _isAirborne;
@@ -32,7 +37,6 @@ public class Player : MonoBehaviour
         _animator = GetComponentInChildren<Animator>();
         _rb = GetComponent<Rigidbody2D>();
     }
-
     private void Update()
     {
         UpdateAirbornStatus();
@@ -82,14 +86,30 @@ public class Player : MonoBehaviour
         {
             JumpButton();
         }
-
     }
 
     private void Jump() => _rb.velocity = new Vector2(_rb.velocity.x, _firtJumpForce);
 
     private void DoubleJump()
     {
+        _isWallJumping = false;
         _rb.velocity = new(_rb.velocity.x, _secondJumpForce);
+    }
+
+    private void WallJump()
+    {
+        _canDoubleJump = true;
+        _rb.velocity = new Vector2(_wallJumpForce.x * -facingDir, _wallJumpForce.y);
+        Flip();
+        StopAllCoroutines();
+        StartCoroutine(WallJumpRoutine());
+    }
+
+    private IEnumerator WallJumpRoutine()
+    {
+        _isWallJumping = true;
+        yield return new WaitForSeconds(_wallJumpDuration);
+        _isWallJumping = false;
     }
 
     private void JumpButton()
@@ -97,6 +117,10 @@ public class Player : MonoBehaviour
         if(_isGrounded)
         {
             Jump();
+        }
+        else if(_isWallDetected && !_isGrounded)
+        {
+            WallJump();
         }
         else if(_canDoubleJump)
         {
@@ -108,7 +132,7 @@ public class Player : MonoBehaviour
     private void HandleCollision()
     {
         _isGrounded = Physics2D.Raycast(transform.position, Vector2.down, _groundCheckDistance, _groundLayerMasks);
-        _isWallDetected = Physics2D.Raycast(transform.position, Vector2.right * facingDir, _wallCheckDistance, _wallLayerMasks);
+        _isWallDetected = Physics2D.Raycast(transform.position, Vector2.right * facingDir, _wallCheckDistance, _groundLayerMasks);
     }
 
     private void HandleAnimations()
@@ -122,6 +146,8 @@ public class Player : MonoBehaviour
     private void HandleMovement()
     {
         if(_isWallDetected)
+            return;
+        if(_isWallJumping)
             return;
         _rb.velocity = new Vector2(_xInput * _moveSpeed, _rb.velocity.y);
     }
